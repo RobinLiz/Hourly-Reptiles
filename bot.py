@@ -2,9 +2,9 @@ import requests
 import random
 from atproto import Client
 from datetime import datetime
+import os
 
 # --- Config (pulled from GitHub Secrets as env vars) ---
-import os
 BSKY_HANDLE = os.environ['BSKY_IDENTIFIER']
 BSKY_PASSWORD = os.environ['BSKY_PASSWORD']
 
@@ -21,25 +21,30 @@ def get_random_reptile():
     r = requests.get('https://api.inaturalist.org/v1/observations', params=params)
     r.raise_for_status()
     results = r.json()['results']
-    
+
     # Filter to ones that actually have photos
     with_photos = [o for o in results if o.get('photos')]
+
+    # If that page was empty, fall back to page 1
+    if not with_photos:
+        params['page'] = 1
+        r = requests.get('https://api.inaturalist.org/v1/observations', params=params)
+        r.raise_for_status()
+        results = r.json()['results']
+        with_photos = [o for o in results if o.get('photos')]
+
     if not with_photos:
         raise ValueError("No observations with photos found")
-    
+
     obs = random.choice(with_photos)
     photo = obs['photos'][0]
-    
-    # Get medium-sized image
     img_url = photo['url'].replace('square', 'medium')
-    
-    # Build caption
-    name = obs.get('species_guess') or obs['taxon']['name'] if obs.get('taxon') else 'Unknown reptile'
+
+    name = obs['taxon']['name'] if obs.get('taxon') else 'Unknown reptile'
     common = obs['taxon'].get('preferred_common_name', '').title() if obs.get('taxon') else ''
     place = obs.get('place_guess', '')
     observer = obs['user']['login']
-    obs_url = f"https://www.inaturalist.org/observations/{obs['id']}"
-    
+
     caption_parts = []
     if common:
         caption_parts.append(f"🦎 {common} ({name})")
@@ -49,17 +54,16 @@ def get_random_reptile():
         caption_parts.append(f"📍 {place}")
     caption_parts.append(f"📸 {observer} on iNaturalist")
     caption_parts.append(f"#reptiles #herpetology #iNaturalist")
-    
+
     caption = '\n'.join(caption_parts)
-    # Bluesky cap is 300 chars
     if len(caption) > 295:
         caption = caption[:292] + '...'
-    
+
     return img_url, caption, name, common
 
 def post_to_bluesky(img_url, caption, alt_text):
     img_data = requests.get(img_url).content
-    
+
     client = Client()
     client.login(BSKY_HANDLE, BSKY_PASSWORD)
     client.send_image(
