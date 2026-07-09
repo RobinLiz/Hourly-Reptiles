@@ -13,11 +13,10 @@ def get_random_reptile():
     params = {
         'taxon_name': 'Reptilia',
         'has[]': 'photos',
-        'quality_grade': 'research',   # verified IDs only
+        'quality_grade': 'research',
         'per_page': 30,
-        'page': random.randint(1, 100),
-        'order_by': 'random',
-        'license': 'cc-by,cc-by-nc',  # usable images only
+        'page': random.randint(1, 500),
+        'license': 'cc-by,cc-by-nc',
     }
     r = requests.get('https://api.inaturalist.org/v1/observations', params=params)
     r.raise_for_status()
