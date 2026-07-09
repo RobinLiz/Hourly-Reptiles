@@ -1,0 +1,25 @@
+name: Post Reptile to Bluesky
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # every hour on the hour
+  workflow_dispatch:       # lets you trigger manually to test
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install atproto requests
+
+      - name: Run bot
+        env:
+          BSKY_IDENTIFIER: ${{ secrets.BSKY_IDENTIFIER }}
+          BSKY_PASSWORD: ${{ secrets.BSKY_PASSWORD }}
+        run: python bot.py
