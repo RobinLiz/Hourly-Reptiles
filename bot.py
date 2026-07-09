@@ -1,7 +1,6 @@
 import requests
 import random
 from atproto import Client
-from datetime import datetime
 import os
 
 # --- Config (pulled from GitHub Secrets as env vars) ---
@@ -11,21 +10,18 @@ BSKY_PASSWORD = os.environ['BSKY_PASSWORD']
 def get_random_reptile():
     """Fetch a random reptile observation with a photo from iNaturalist."""
     params = {
-        'taxon_name': 'Reptilia',
+        'taxon_id': 26036,
         'has[]': 'photos',
         'quality_grade': 'research',
         'per_page': 30,
-        'page': random.randint(1, 500),
-        'license': 'cc-by,cc-by-nc',
+        'page': random.randint(1, 100),
     }
     r = requests.get('https://api.inaturalist.org/v1/observations', params=params)
     r.raise_for_status()
     results = r.json()['results']
 
-    # Filter to ones that actually have photos
     with_photos = [o for o in results if o.get('photos')]
 
-    # If that page was empty, fall back to page 1
     if not with_photos:
         params['page'] = 1
         r = requests.get('https://api.inaturalist.org/v1/observations', params=params)
